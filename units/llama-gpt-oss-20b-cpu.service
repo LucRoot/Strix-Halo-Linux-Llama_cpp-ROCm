@@ -1,0 +1,45 @@
+[Unit]
+Description=llama.cpp CPU seat: GPT OSS 20B (MXFP4)
+After=network.target
+ConditionPathExists=/opt/models/gpt-oss-20b-mxfp4.gguf
+
+StartLimitBurst=3
+StartLimitIntervalSec=300
+
+[Service]
+Type=simple
+User=llama
+Group=llama-models
+WorkingDirectory=/opt/llama
+EnvironmentFile=-/etc/llama-fleet.env
+ExecStartPre=/usr/bin/mkdir -p /var/lib/llama/hotcache/gpt-oss-20b
+ExecStart=/opt/llama/bin/llama-server \
+  -m /opt/models/gpt-oss-20b-mxfp4.gguf \
+  -ngl 0 \
+  -c 8192 \
+  --port 8017 \
+  --host 127.0.0.1 \
+  --threads 16 \
+  --threads-batch 16 \
+  --parallel 1 \
+  --cont-batching \
+  --metrics \
+  --cache-ram 1024 \
+  --cache-type-k q5_1 \
+  --cache-type-v q4_0 \
+  --slot-save-path /var/lib/llama/hotcache/gpt-oss-20b/ \
+  --jinja
+Restart=on-failure
+RestartSec=15
+TimeoutStopSec=120
+
+# Large system-RAM budget: this seat is the one that must never start a swap
+# storm (swap storms on unified-memory APUs trigger KFD GPU thrash - see
+# docs/PITFALLS.md). Hence the biggest MemoryLow on the box.
+MemoryHigh=16G
+MemoryMax=22G
+MemoryLow=7G
+MemorySwapMax=4G
+
+[Install]
+WantedBy=multi-user.target

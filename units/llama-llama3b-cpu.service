@@ -1,0 +1,36 @@
+[Unit]
+Description=llama.cpp CPU seat: Llama 3.2 3B fine-tune (Q6_K, high-throughput small seat)
+After=network.target
+
+[Service]
+Type=simple
+User=llama
+Group=llama-models
+UMask=002
+WorkingDirectory=/opt/llama
+EnvironmentFile=-/etc/llama-fleet.env
+ExecStart=/opt/llama/bin/llama-server \
+  -m /opt/models/llama32-3b-ft-q6_k.gguf \
+  -ngl 0 \
+  -c 32768 \
+  --port 8016 \
+  --host 127.0.0.1 \
+  --threads 16 \
+  --threads-batch 16 \
+  --parallel 2 \
+  --cont-batching \
+  --metrics \
+  --cache-ram 4096 \
+  --slot-save-path /var/lib/llama/hotcache/llama3b/ \
+  --jinja
+Restart=on-failure
+RestartSec=15
+TimeoutStopSec=120
+
+MemoryHigh=10G
+MemoryMax=14G
+MemoryLow=5G
+MemorySwapMax=2G
+
+[Install]
+WantedBy=multi-user.target

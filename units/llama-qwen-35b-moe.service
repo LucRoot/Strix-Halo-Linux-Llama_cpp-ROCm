@@ -1,0 +1,43 @@
+[Unit]
+Description=llama.cpp ROCm seat: Qwen-35B-A3B (MoE, Q4_K_M, GPU)
+After=network.target
+
+[Service]
+Type=simple
+User=llama
+Group=llama-models
+SupplementaryGroups=render video
+UMask=002
+WorkingDirectory=/opt/llama
+EnvironmentFile=-/etc/llama-fleet.env
+Environment="ROCM_HOME=/opt/rocm-7.2.2"
+Environment="PYTORCH_ROCM_ARCH=gfx1151"
+Environment="HSA_OVERRIDE_GFX_VERSION=11.5.1"
+Environment="AMD_SERIALIZE_KERNEL=3"
+ExecStart=/opt/llama/bin/llama-server-rocm \
+  -m /opt/models/Qwen-35B-A3B-Q4_K_M.gguf \
+  -ngl all \
+  --no-mmap \
+  -c 16384 \
+  --port 8011 \
+  --host 127.0.0.1 \
+  --threads 16 \
+  --threads-batch 16 \
+  --parallel 2 \
+  --cont-batching \
+  --metrics \
+  --cache-ram 2048 \
+  --cache-type-k q8_0 \
+  --cache-type-v q8_0 \
+  --flash-attn on \
+  --slot-save-path /var/lib/llama/hotcache/qwen-35b/ \
+  --jinja
+Restart=on-failure
+RestartSec=15
+TimeoutStopSec=120
+
+MemoryMax=16G
+MemoryLow=1G
+
+[Install]
+WantedBy=multi-user.target
